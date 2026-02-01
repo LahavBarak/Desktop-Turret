@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+
+# VS Code
+.vscode/
+
+# Project Generated Data
+*.csv
+*.png
+velocity_data.csv
+velocity_plot.png
+trigger_data.csv
+trigger_plot.png
+trigger_analysis_plot.png
+
+# Artifacts
+.gemini/
+brain/
