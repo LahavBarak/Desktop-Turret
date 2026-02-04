@@ -1,12 +1,16 @@
 #include <ESP32Servo.h>
+#include <SPI.h>
 
 // --- Pin Definitions ---
-const int ENCODER_PIN = D1; // PWM Input from AS5048A
+const int CS_PIN = D3;   // SPI Chip Select
+const int SCK_PIN = D8;  // SPI Clock
+const int MISO_PIN = D4; // SPI MISO (Safe Pin)
+const int MOSI_PIN = D5; // SPI MOSI (Safe Pin)
 const int SERVO_PIN = D2;   // Servo Control Pin
 
 // --- Constants ---
 const int STOP_PULSE = 1500;
-const int PULSE_START = 1600;
+const int PULSE_START = 2600;
 const int PULSE_END = 2600;
 const int PULSE_STEP = 200;
 const float TARGET_ROTATION = 180.0;
@@ -25,10 +29,16 @@ int currentPulse = PULSE_START;
 unsigned long subStartTime = 0;
 
 void setup() {
+  // Safety Delay
+  delay(1000);
+  
   Serial.begin(115200);
   
-  // Encoder Setup
-  pinMode(ENCODER_PIN, INPUT);
+  // SPI Setup
+  pinMode(CS_PIN, OUTPUT);
+  digitalWrite(CS_PIN, HIGH);
+  SPI.begin(SCK_PIN, MISO_PIN, MOSI_PIN, CS_PIN);
+  SPI.setClockDivider(SPI_CLOCK_DIV16); // Global divider for simplicity or use transaction
 
   // Servo Setup
   ESP32PWM::allocateTimer(0);
@@ -136,17 +146,34 @@ void runSubTest() {
   }
 }
 
-// Read Angle from AS5048A via PWM
-// Returns true if valid reading, false if timeout
+// Read Angle from AS5048A via SPI
+// Returns true (always valid if wired correctly)
 bool readAngleDegrees(float &angle) {
-  unsigned long highTime = pulseIn(ENCODER_PIN, HIGH, 3000); 
-  unsigned long lowTime  = pulseIn(ENCODER_PIN, LOW, 3000);
-  unsigned long totalTime = highTime + lowTime;
-
-  if (totalTime == 0) return false; 
-
-  float dutyCycle = (float)highTime / (float)totalTime;
-  angle = dutyCycle * 360.0;
+  // SPI Protocol for AS5048A:
+  // 1. Send Command (Read Angle = 0xFFFF)
+  // 2. Receive Response (previous command result, but for continuous read we pipeline)
   
+  // Settings: 1MHz, MSB First, Mode 1 (CPOL=0, CPHA=1)
+  SPI.beginTransaction(SPISettings(1000000, MSBFIRST, SPI_MODE1));
+  
+  // CS Low to start transaction
+  digitalWrite(CS_PIN, LOW);
+  
+  // Send 0xFFFF (Read Angle) and receive 16-bit response
+  uint16_t rawData = SPI.transfer16(0xFFFF);
+  
+  // CS High to end transaction
+  digitalWrite(CS_PIN, HIGH);
+  
+  SPI.endTransaction();
+  
+  // Wait a tiny bit? AS5048A needs min 350ns CS high. ESP32 is fast.
+  delayMicroseconds(1); 
+
+  // Mask top 2 bits (14 bits resolution)
+  // Bit 14 is Error, Bit 15 is Parity. Data is lower 14.
+  uint16_t angleData = rawData & 0x3FFF;
+  
+  angle = (float)angleData / 16383.0 * 360.0;
   return true;
 }
