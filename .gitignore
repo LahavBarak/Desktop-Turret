@@ -18,3 +18,11 @@ trigger_analysis_plot.png
 # Artifacts
 .gemini/
 brain/
+
+# ESP-IDF
+build/
+managed_components/
+dependencies.lock
+sdkconfig
+sdkconfig.old
+*.log
