@@ -1,8 +1,11 @@
-# ESP32-P4 Camera Tester - Default Config
+# ESP32-P4 Camera Tester — Default sdkconfig
 
-# --- Console ---
+# --- Console UART ---
+# Boot at 2 Mbaud so the viewer connects at a single fixed rate.
+# No runtime baudrate switch is needed; the viewer discards boot noise
+# via the frame-header sync before processing any frame data.
 CONFIG_ESP_CONSOLE_UART_DEFAULT=y
-CONFIG_ESP_CONSOLE_UART_CUSTOM=n
+CONFIG_ESP_CONSOLE_UART_BAUDRATE=2000000
 
 # --- SPIRAM ---
 CONFIG_SPIRAM=y
@@ -10,6 +13,7 @@ CONFIG_SPIRAM_MODE_OCT=y
 CONFIG_SPIRAM_SPEED_200M=y
 CONFIG_SPIRAM_FETCH_INSTRUCTIONS=y
 CONFIG_SPIRAM_RODATA=y
+
 # --- OV5647 Camera Sensor ---
 CONFIG_CAMERA_OV5647=y
 CONFIG_CAMERA_OV5647_AUTO_DETECT_MIPI_INTERFACE_SENSOR=y
@@ -18,8 +22,9 @@ CONFIG_CAMERA_OV5647_MIPI_RAW8_800X800_50FPS=y
 CONFIG_CAMERA_OV5647_MIPI_DEFAULT_FMT_RAW8_800X640_50FPS=y
 CONFIG_CAMERA_OV5647_CSI_LINESYNC_ENABLE=y
 
-# --- Stack size ---
-CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
+# --- Stack ---
+# Extra headroom for uart_driver_install and double-buffer bookkeeping
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=16384
 
 # --- Logging ---
 CONFIG_LOG_DEFAULT_LEVEL_INFO=y
