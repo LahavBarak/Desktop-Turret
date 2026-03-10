@@ -1,0 +1,5 @@
+## IDF Component Manager manifest for claude_cam_test
+dependencies:
+  idf: ">=5.3"
+  espressif/esp_cam_sensor: "^0.7.0"
+  espressif/esp_sccb_intf: "^1.0.0"

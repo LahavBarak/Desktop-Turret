@@ -1,0 +1,16 @@
+# ── Console UART ──────────────────────────────────────────────────────────────
+# Must be set here, not at runtime.  A runtime baud-rate change leaves garbage
+# bytes in the TX FIFO that get sent at the wrong rate, corrupting the stream.
+CONFIG_ESP_CONSOLE_UART_BAUDRATE=2000000
+
+# ── SPIRAM ────────────────────────────────────────────────────────────────────
+# Frame buffers for 800x640 RGB565 are ~1 MB; SPIRAM is required.
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_USE_MALLOC=y
+CONFIG_SPIRAM_SPEED_80M=y
+
+# ── Stack / heap ──────────────────────────────────────────────────────────────
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
+
+# ── Reduce log noise on UART0 during development ──────────────────────────────
+CONFIG_LOG_DEFAULT_LEVEL_INFO=y
