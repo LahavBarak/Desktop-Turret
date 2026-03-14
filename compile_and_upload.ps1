@@ -1,7 +1,12 @@
+# compile_and_upload.ps1 - Auto-detect ESP32 board and compile/upload a sketch
+# Usage: .\compile_and_upload.ps1 <path\to\sketch.ino> [-Board c3|p4] (or simply without '-Board')
+
 param(
     [Parameter(Mandatory=$true, Position=0)]
     [string]$SketchPath,
-    [Parameter(Mandatory=$false)]
+
+    [Parameter(Mandatory=$false, Position=1)]
+    [Alias("b")]
     [string]$Board = ""
 )
 
@@ -77,52 +82,9 @@ Write-Host "Port:   $($detected.Port)"
 Write-Host "Sketch: $resolvedPath"
 Write-Host ""
 
-# Run compile+upload as a background job with a spinner
-$job = Start-Job -ScriptBlock {
-    param($fqbn, $port, $sketch)
-    arduino-cli compile --fqbn $fqbn -u -p $port $sketch 2>&1
-} -ArgumentList $detected.FQBN, $detected.Port, $resolvedPath.ToString()
-
-$spinner = @('|', '/', '-', '\')
-$i = 0
-$phase = "Compiling"
-Write-Host -NoNewline "$phase... "
-
-while ($job.State -eq 'Running') {
-    Write-Host -NoNewline "`r$phase... $($spinner[$i % 4]) " -ForegroundColor Yellow
-    Start-Sleep -Milliseconds 200
-    $i++
-
-    # Check for partial output to detect phase change
-    $partial = Receive-Job $job -ErrorAction SilentlyContinue
-    if ($partial) {
-        foreach ($line in $partial) {
-            $text = $line.ToString()
-            if ($text -match "Uploading|Serial port|Connecting") {
-                if ($phase -eq "Compiling") {
-                    Write-Host "`r$phase... done!        " -ForegroundColor Green
-                    $phase = "Uploading"
-                }
-            }
-            # Stream upload/result lines
-            if ($phase -eq "Uploading" -or $text -match "error|Error|fatal") {
-                Write-Host $text
-            }
-        }
-    }
-}
-
-# Collect any remaining output
-Write-Host "`r$phase... done!        " -ForegroundColor Green
-$remaining = Receive-Job $job -ErrorAction SilentlyContinue
-if ($remaining) {
-    foreach ($line in $remaining) {
-        Write-Host $line.ToString()
-    }
-}
-
-$result = $job.ChildJobs[0].JobStateInfo
-Remove-Job $job -Force
+# Run compile+upload in foreground for maximum speed
+Write-Host "Compiling & Uploading... " -ForegroundColor Yellow
+arduino-cli compile --fqbn $($detected.FQBN) -u -p $($detected.Port) $resolvedPath.ToString()
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "`nDone! Upload successful." -ForegroundColor Green
