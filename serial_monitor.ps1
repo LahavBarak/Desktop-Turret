@@ -37,4 +37,19 @@ Write-Host "Baudrate: $Baudrate"
 Write-Host "Press CTRL-C to exit."
 Write-Host ""
 
-arduino-cli monitor -p $port -c baudrate=$Baudrate
+try {
+    while ($true) {
+        $ports = [System.IO.Ports.SerialPort]::GetPortNames()
+        if ($ports -contains $port) {
+            arduino-cli monitor -p $port -c baudrate=$Baudrate
+            if ($LASTEXITCODE -ne 0) {
+                Write-Host "Connection lost. Waiting for device to reconnect..." -ForegroundColor Yellow
+                Start-Sleep -Seconds 1
+            }
+        } else {
+            Start-Sleep -Milliseconds 500
+        }
+    }
+} catch {
+    # Handles CTRL-C termination
+}

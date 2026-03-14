@@ -5,7 +5,7 @@ param(
 
 # Board definitions: chip type -> FQBN
 $boards = @{
-    "ESP32-C3" = "esp32:esp32:XIAO_ESP32C3:CDCOnBoot=cdc"
+    "ESP32-C3" = "esp32:esp32:XIAO_ESP32C3:CDCOnBoot=default"
     "ESP32-P4" = "esp32:esp32:esp32p4"
 }
 
