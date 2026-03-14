@@ -26,3 +26,5 @@ dependencies.lock
 sdkconfig
 sdkconfig.old
 *.log
+99-esp32.rules
+CLAUDE.md

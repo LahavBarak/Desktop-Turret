@@ -1,9 +1,9 @@
 void setup() {
   Serial.begin(115200);
-  delay(1000);
-  Serial.println("=== ESP32 + Antigravity: Connection Test ===");
+  while (!Serial) { delay(10); }  // Wait for host to open port (DTR asserted)
+  Serial.println("=== ESP32 Connection Test ===");
   Serial.println("If you see this, upload and serial monitor are working!");
-  pinMode(2, OUTPUT); // Built-in LED on most ESP32 boards
+  pinMode(10, OUTPUT); // XIAO ESP32-C3 user LED is GPIO10 (active-low)
 }
 
 int counter = 0;

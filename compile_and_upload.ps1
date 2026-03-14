@@ -1,6 +1,8 @@
 param(
     [Parameter(Mandatory=$true, Position=0)]
-    [string]$SketchPath
+    [string]$SketchPath,
+    [Parameter(Mandatory=$false)]
+    [string]$Board = ""
 )
 
 # Board definitions: chip type -> FQBN
@@ -15,6 +17,9 @@ $vidpid = @{
     "0x1A86:0x55D3" = "ESP32-P4"   # CH343 USB-serial on P4 Nano
 }
 
+# Normalize optional board filter (c3 -> C3, p4 -> P4)
+$boardFilter = $Board.ToUpper()
+
 # Detect board
 Write-Host "Scanning for ESP32 board..." -ForegroundColor Cyan
 $json = arduino-cli board list --format json | ConvertFrom-Json
@@ -28,6 +33,7 @@ foreach ($entry in $portList) {
     if ($entry.matching_boards) {
         foreach ($board in $entry.matching_boards) {
             foreach ($chip in $boards.Keys) {
+                if ($boardFilter -and $chip -notlike "*$boardFilter*") { continue }
                 if ($board.fqbn -like "*$($chip.ToLower().Replace('-',''))*" -or $board.name -like "*$chip*") {
                     $detected = @{ Port = $portInfo.address; Chip = $chip; FQBN = $boards[$chip]; Name = $board.name }
                     break
@@ -42,7 +48,9 @@ foreach ($entry in $portList) {
         $key = "$($portInfo.properties.vid):$($portInfo.properties.pid)"
         if ($vidpid.ContainsKey($key)) {
             $chip = $vidpid[$key]
-            $detected = @{ Port = $portInfo.address; Chip = $chip; FQBN = $boards[$chip]; Name = "$chip (detected via USB VID:PID)" }
+            if (-not $boardFilter -or $chip -like "*$boardFilter*") {
+                $detected = @{ Port = $portInfo.address; Chip = $chip; FQBN = $boards[$chip]; Name = "$chip (detected via USB VID:PID)" }
+            }
         }
     }
 
@@ -50,8 +58,12 @@ foreach ($entry in $portList) {
 }
 
 if (-not $detected) {
-    Write-Host "No supported ESP32 board found. Make sure it's plugged in." -ForegroundColor Red
-    Write-Host "Supported boards: $($boards.Keys -join ', ')"
+    if ($boardFilter) {
+        Write-Host "ESP32-$boardFilter not found. Make sure it's plugged in." -ForegroundColor Red
+    } else {
+        Write-Host "No supported ESP32 board found. Make sure it's plugged in." -ForegroundColor Red
+        Write-Host "Supported boards: $($boards.Keys -join ', ')"
+    }
     exit 1
 }
 
