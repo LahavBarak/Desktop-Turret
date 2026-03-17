@@ -11,7 +11,7 @@ const int LED_PIN = 21;     // Xiao ESP32S3 User LED
 
 // --- Constants ---
 const int PWM_STOP = 1500;
-const int PWM_SLOW = 2000; // Slowly Move one way
+const int PWM_SLOW = 2400; // Slowly Move one way
 
 Servo myServo;
 
